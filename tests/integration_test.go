@@ -21,12 +21,11 @@ import (
 var ctx = context.Background()
 
 func setupRouter() *gin.Engine {
-	router := gin.Default()
-	api.RegisterRoutes(router)
-	return router
+	// Use the SetupRouter function to set up routes
+	return api.SetupRouter()
 }
 
-func TestCreateProduct(t *testing.T) {
+func TestCreateProductInAPI(t *testing.T) {
 	router := setupRouter()
 
 	productData := map[string]interface{}{
@@ -64,7 +63,8 @@ func TestCreateProduct(t *testing.T) {
 	assert.NotNil(t, cachedProduct, "Product data should be cached")
 }
 
-func TestGetProductByID(t *testing.T) {
+// Renamed the function to avoid redeclaration conflict
+func TestGetProductByIDAfterCreation(t *testing.T) {
 	router := setupRouter()
 
 	productData := map[string]interface{}{
@@ -98,7 +98,8 @@ func TestGetProductByID(t *testing.T) {
 	assert.Equal(t, 29.99, product.ProductPrice)
 }
 
-func TestRabbitMQ(t *testing.T) {
+// Renamed the function to avoid redeclaration conflict
+func TestRabbitMQImageProcessing(t *testing.T) {
 	router := setupRouter()
 
 	productData := map[string]interface{}{
@@ -136,14 +137,19 @@ func TestRabbitMQ(t *testing.T) {
 
 	select {
 	case msg := <-msgs:
-		assert.True(t, msg.Body == []byte("http://example.com/image1.jpg") || msg.Body == []byte("http://example.com/image2.jpg"), "Received unexpected message")
+		// Use bytes.Equal for comparing slices
+		if bytes.Equal(msg.Body, []byte("http://example.com/image1.jpg")) || bytes.Equal(msg.Body, []byte("http://example.com/image2.jpg")) {
+			// Test passed
+		} else {
+			t.Fatalf("Received unexpected message: %s", msg.Body)
+		}
 	default:
 		t.Fatal("No messages received from RabbitMQ")
 	}
 }
 
 // Helper function to perform HTTP requests and return the response recorder
-func performRequest(router http.HandlerFunc, req *http.Request) *httptest.ResponseRecorder {
+func performRequest(router http.Handler, req *http.Request) *httptest.ResponseRecorder {
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 	return rr
